@@ -23,6 +23,8 @@ Global / onLoad := (Global / onLoad).value.andThen { s =>
   s
 }
 
+ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+
 // Makes sure to increase the version and remove the distance
 ThisBuild / version := dynverGitDescribeOutput.value
   .mkVersion(out => versionFmt(out, dynverSonatypeSnapshots.value), fallbackVersion(dynverCurrentDate.value))
