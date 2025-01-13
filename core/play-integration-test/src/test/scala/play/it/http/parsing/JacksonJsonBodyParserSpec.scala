@@ -6,6 +6,8 @@ package play.it.http.parsing
 
 import java.util.concurrent.TimeUnit
 
+import com.fasterxml.jackson.core.JsonFactoryBuilder
+import com.fasterxml.jackson.core.StreamReadConstraints
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.pekko.stream.scaladsl.Source
@@ -71,14 +73,28 @@ class JacksonJsonBodyParserSpec extends PlaySpecification with Matchers {
 
     "parse very deep JSON bodies" in new WithApplication() {
       override def running() = {
-        val depth                              = 50000
-        val either: F.Either[Result, JsonNode] = parse(s"""{"foo": ${"[" * depth} "asdf" ${"]" * depth}  }""")
-        var node: JsonNode                     = either.right.get().at("/foo")
-        while (node.isArray) {
-          node = node.get(0)
-        }
+        val depth        = 50000
+        val objectMapper = play.libs.Json.mapper()
+        try {
+          val streamReadConstraints = StreamReadConstraints
+            .builder()
+            .maxNestingDepth(Integer.MAX_VALUE)
+            .build()
+          val testMapper = play.libs.Json.newDefaultMapper()
+          testMapper
+            .getFactory()
+            .setStreamReadConstraints(streamReadConstraints)
+          play.libs.Json.setObjectMapper(testMapper)
+          val either: F.Either[Result, JsonNode] = parse(s"""{"foo": ${"[" * depth} "asdf" ${"]" * depth}  }""")
+          var node: JsonNode                     = either.right.get().at("/foo")
+          while (node.isArray) {
+            node = node.get(0)
+          }
 
-        node.asText() must_== "asdf"
+          node.asText() must_== "asdf"
+        } finally {
+          play.libs.Json.setObjectMapper(objectMapper)
+        }
       }
     }
 
