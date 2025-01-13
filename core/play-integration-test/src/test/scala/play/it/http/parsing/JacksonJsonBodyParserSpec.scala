@@ -80,10 +80,10 @@ class JacksonJsonBodyParserSpec extends PlaySpecification with Matchers {
             .builder()
             .maxNestingDepth(Integer.MAX_VALUE)
             .build()
-          val testMapper = play.libs.Json.newDefaultMapper();
+          val testMapper = play.libs.Json.newDefaultMapper()
           testMapper
             .getFactory()
-            .setStreamReadConstraints(streamReadConstraints);
+            .setStreamReadConstraints(streamReadConstraints)
           play.libs.Json.setObjectMapper(testMapper)
           val either: F.Either[Result, JsonNode] = parse(s"""{"foo": ${"[" * depth} "asdf" ${"]" * depth}  }""")
           var node: JsonNode                     = either.right.get().at("/foo")
