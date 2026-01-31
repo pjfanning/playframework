@@ -32,6 +32,8 @@ object WebSocketHandler {
    * Handle a WebSocket using the new WebSocketUpgrade API
    * 
    * This method uses the maintained pekko-http WebSocketUpgrade API instead of the deprecated UpgradeToWebSocket.
+   * 
+   * @since 3.1.0
    */
   def handleWebSocket(
       upgrade: WebSocketUpgrade,
@@ -63,12 +65,10 @@ object WebSocketHandler {
    *
    * See https://github.com/playframework/playframework/issues/7895
    */
-  @deprecated("Use the WebSocketUpgrade API instead of UpgradeToWebSocket", "3.0.0")
   @deprecated("Please specify the subprotocol (or be explicit that you specif None)", "2.7.0")
   def handleWebSocket(upgrade: UpgradeToWebSocket, flow: Flow[Message, Message, ?], bufferLimit: Int): HttpResponse =
     handleWebSocket(upgrade, flow, bufferLimit, None)
 
-  @deprecated("Use the WebSocketUpgrade API instead of UpgradeToWebSocket", "3.0.0")
   @deprecated("Please specify the keep-alive mode (ping or pong) and max-idle time", "2.8.19")
   def handleWebSocket(
       upgrade: UpgradeToWebSocket,
@@ -81,7 +81,7 @@ object WebSocketHandler {
   /**
    * Handle a WebSocket using the deprecated UpgradeToWebSocket API
    */
-  @deprecated("Use the WebSocketUpgrade API instead of UpgradeToWebSocket", "3.0.0")
+  @deprecated("Use the WebSocketUpgrade API instead of UpgradeToWebSocket", "3.1.0")
   def handleWebSocket(
       upgrade: UpgradeToWebSocket,
       flow: Flow[Message, Message, ?],
@@ -294,12 +294,12 @@ object WebSocketHandler {
    */
   private def pekkoMessageToRawMessage(message: PekkoMessage): RawMessage = message match {
     case PekkoTextMessage.Strict(text) =>
-      RawMessage(MessageType.Text, ByteString(text), fin = true)
+      RawMessage(MessageType.Text, ByteString(text), isFinal = true)
     case text: PekkoTextMessage =>
       // For streamed text messages, we need to collect the text - not supported yet
       throw new UnsupportedOperationException("Streamed text messages are not yet supported")
     case PekkoBinaryMessage.Strict(data) =>
-      RawMessage(MessageType.Binary, data, fin = true)
+      RawMessage(MessageType.Binary, data, isFinal = true)
     case binary: PekkoBinaryMessage =>
       // For streamed binary messages
       throw new UnsupportedOperationException("Streamed binary messages are not yet supported")
