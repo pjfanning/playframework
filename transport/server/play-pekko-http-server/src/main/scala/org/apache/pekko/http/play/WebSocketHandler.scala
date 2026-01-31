@@ -7,11 +7,11 @@ package org.apache.pekko.http.play
 import scala.concurrent.duration.Duration
 
 import org.apache.pekko.http.impl.engine.ws._
-import org.apache.pekko.http.scaladsl.model.ws.UpgradeToWebSocket
-import org.apache.pekko.http.scaladsl.model.ws.WebSocketUpgrade
+import org.apache.pekko.http.scaladsl.model.ws.{ BinaryMessage => PekkoBinaryMessage }
 import org.apache.pekko.http.scaladsl.model.ws.{ Message => PekkoMessage }
 import org.apache.pekko.http.scaladsl.model.ws.{ TextMessage => PekkoTextMessage }
-import org.apache.pekko.http.scaladsl.model.ws.{ BinaryMessage => PekkoBinaryMessage }
+import org.apache.pekko.http.scaladsl.model.ws.UpgradeToWebSocket
+import org.apache.pekko.http.scaladsl.model.ws.WebSocketUpgrade
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.stream.scaladsl._
 import org.apache.pekko.stream.stage._
@@ -30,9 +30,9 @@ object WebSocketHandler {
 
   /**
    * Handle a WebSocket using the new WebSocketUpgrade API
-   * 
+   *
    * This method uses the maintained pekko-http WebSocketUpgrade API instead of the deprecated UpgradeToWebSocket.
-   * 
+   *
    * @since 3.1.0
    */
   def handleWebSocket(
@@ -49,7 +49,7 @@ object WebSocketHandler {
       .map(pekkoMessageToRawMessage)
       .via(WebSocketFlowHandler.webSocketProtocol(bufferLimit, wsKeepAliveMode, wsKeepAliveMaxIdle).join(flow))
       .map(playMessageToPekkoMessage)
-    
+
     // Use the handleMessages API
     subprotocol match {
       case Some(protocol) => upgrade.handleMessages(pekkoFlow, Some(protocol))
@@ -318,13 +318,13 @@ object WebSocketHandler {
     case PingMessage(_) | PongMessage(_) | CloseMessage(_, _) =>
       throw new IllegalArgumentException(
         s"User WebSocket flows should not output ${message.getClass.getSimpleName}. " +
-        "These are handled by the framework's handleMessages API."
+          "These are handled by the framework's handleMessages API."
       )
   }
 
   /**
    * Convert a Pekko HTTP ws.Message to a Play Message
-   * 
+   *
    * Note: This function is currently unused but retained for potential future use
    * when direct message-to-message conversion without protocol handling is needed.
    */
@@ -342,6 +342,4 @@ object WebSocketHandler {
       throw new UnsupportedOperationException("Streamed binary messages are not yet supported")
   }
 
-
 }
-
