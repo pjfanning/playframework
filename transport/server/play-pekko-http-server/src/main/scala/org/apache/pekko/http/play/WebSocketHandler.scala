@@ -10,6 +10,8 @@ import org.apache.pekko.http.impl.engine.ws._
 import org.apache.pekko.http.scaladsl.model.ws.UpgradeToWebSocket
 import org.apache.pekko.http.scaladsl.model.ws.WebSocketUpgrade
 import org.apache.pekko.http.scaladsl.model.ws.{ Message => PekkoMessage }
+import org.apache.pekko.http.scaladsl.model.ws.{ TextMessage => PekkoTextMessage }
+import org.apache.pekko.http.scaladsl.model.ws.{ BinaryMessage => PekkoBinaryMessage }
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.stream.scaladsl._
 import org.apache.pekko.stream.stage._
@@ -23,12 +25,6 @@ import play.api.libs.streams.PekkoStreams
 import play.core.server.common.WebSocketFlowHandler
 import play.core.server.common.WebSocketFlowHandler.MessageType
 import play.core.server.common.WebSocketFlowHandler.RawMessage
-
-// Import Pekko HTTP Message implementations
-import org.apache.pekko.http.scaladsl.model.ws.{
-  TextMessage => PekkoTextMessage,
-  BinaryMessage => PekkoBinaryMessage
-}
 
 object WebSocketHandler {
 
@@ -45,11 +41,13 @@ object WebSocketHandler {
       wsKeepAliveMode: String,
       wsKeepAliveMaxIdle: Duration,
   ): HttpResponse = {
-    // Convert Play Message flow to pekko-http Message flow and back
-    // The handleMessages API expects and produces Pekko HTTP Message types
+    // Apply WebSocket protocol handling to the Play Message flow
+    val protocolHandledFlow = WebSocketFlowHandler.webSocketProtocol(bufferLimit, wsKeepAliveMode, wsKeepAliveMaxIdle).join(flow)
+    
+    // Convert the protocol-handled Play Message flow to pekko-http Message flow
     val pekkoFlow: Flow[PekkoMessage, PekkoMessage, ?] = Flow[PekkoMessage]
       .map(pekkoMessageToPlayMessage)
-      .via(flow)
+      .via(protocolHandledFlow)
       .map(playMessageToPekkoMessage)
     
     // Use the handleMessages API
@@ -296,37 +294,32 @@ object WebSocketHandler {
    */
   private def playMessageToPekkoMessage(message: Message): PekkoMessage = message match {
     case TextMessage(data) =>
-      PekkoTextMessage(data)
+      PekkoTextMessage.Strict(data)
     case BinaryMessage(data) =>
-      PekkoBinaryMessage(data)
-    case PingMessage(data) =>
-      // Ping, Pong, Close messages are not part of the public API,
-      // but they should be handled somewhere in the flow
-      // For now, convert them to text messages as a placeholder
-      PekkoTextMessage(s"PING:${data.utf8String}")
-    case PongMessage(data) =>
-      PekkoTextMessage(s"PONG:${data.utf8String}")
-    case CloseMessage(Some(statusCode), reason) =>
-      // Close messages should be converted to a special marker
-      PekkoTextMessage(s"CLOSE:$statusCode:$reason")
-    case CloseMessage(None, _) =>
-      PekkoTextMessage("CLOSE:1000:")
+      PekkoBinaryMessage.Strict(data)
+    // Ping, Pong, and Close messages are handled by WebSocketFlowHandler.webSocketProtocol
+    // and should not reach this converter in normal operation
+    case other =>
+      throw new IllegalArgumentException(s"Unexpected message type in playMessageToPekkoMessage: ${other.getClass.getSimpleName}")
   }
 
   /**
-   * Convert a Pekko HTTP Message to a Play Message
+   * Convert a Pekko HTTP ws.Message to a Play Message
    */
   private def pekkoMessageToPlayMessage(message: PekkoMessage): Message = message match {
+    case PekkoTextMessage.Strict(text) =>
+      TextMessage(text)
     case text: PekkoTextMessage =>
-      // TextMessage has asScala method that returns a Scala Source
-      // For now, try to extract text directly or fall back to toString
-      TextMessage(text.toString)
+      // For streamed text messages, we need to collect the text
+      // For now, we don't handle this case properly - throw an exception
+      throw new UnsupportedOperationException("Streamed text messages are not yet supported")
+    case PekkoBinaryMessage.Strict(data) =>
+      BinaryMessage(data)
     case binary: PekkoBinaryMessage =>
-      // BinaryMessage has asScala method
-      BinaryMessage(ByteString.empty)
-    case _ =>
-      // Unknown message type, convert to text
-      TextMessage(message.toString)
+      // For streamed binary messages
+      throw new UnsupportedOperationException("Streamed binary messages are not yet supported")
+    // Note: Pekko HTTP Message trait may not expose Ping/Pong/Close in the public API
+    // They are handled at the protocol level by handleMessages
   }
 
 
