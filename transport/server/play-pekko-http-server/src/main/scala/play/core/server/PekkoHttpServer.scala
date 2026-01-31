@@ -24,7 +24,6 @@ import org.apache.pekko.http.play.WebSocketHandler
 import org.apache.pekko.http.scaladsl.model._
 import org.apache.pekko.http.scaladsl.model.headers
 import org.apache.pekko.http.scaladsl.model.headers.Expect
-import org.apache.pekko.http.scaladsl.model.ws.UpgradeToWebSocket
 import org.apache.pekko.http.scaladsl.model.ws.WebSocketUpgrade
 import org.apache.pekko.http.scaladsl.model.AttributeKeys
 import org.apache.pekko.http.scaladsl.settings.ParserSettings
