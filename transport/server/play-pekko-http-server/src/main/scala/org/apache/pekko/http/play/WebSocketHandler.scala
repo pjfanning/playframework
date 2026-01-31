@@ -324,6 +324,9 @@ object WebSocketHandler {
 
   /**
    * Convert a Pekko HTTP ws.Message to a Play Message
+   * 
+   * Note: This function is currently unused but retained for potential future use
+   * when direct message-to-message conversion without protocol handling is needed.
    */
   private def pekkoMessageToPlayMessage(message: PekkoMessage): Message = message match {
     case PekkoTextMessage.Strict(text) =>
@@ -341,5 +344,4 @@ object WebSocketHandler {
 
 
 }
-
 
