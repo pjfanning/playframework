@@ -41,13 +41,11 @@ object WebSocketHandler {
       wsKeepAliveMode: String,
       wsKeepAliveMaxIdle: Duration,
   ): HttpResponse = {
-    // Apply WebSocket protocol handling to the Play Message flow
-    val protocolHandledFlow = WebSocketFlowHandler.webSocketProtocol(bufferLimit, wsKeepAliveMode, wsKeepAliveMaxIdle).join(flow)
-    
-    // Convert the protocol-handled Play Message flow to pekko-http Message flow
+    // Convert Pekko HTTP messages to RawMessages, apply Play's WebSocket protocol logic,
+    // then convert back to Pekko HTTP messages
     val pekkoFlow: Flow[PekkoMessage, PekkoMessage, ?] = Flow[PekkoMessage]
-      .map(pekkoMessageToPlayMessage)
-      .via(protocolHandledFlow)
+      .map(pekkoMessageToRawMessage)
+      .via(WebSocketFlowHandler.webSocketProtocol(bufferLimit, wsKeepAliveMode, wsKeepAliveMaxIdle).join(flow))
       .map(playMessageToPekkoMessage)
     
     // Use the handleMessages API
@@ -224,6 +222,8 @@ object WebSocketHandler {
       MessageType.Pong
     case Protocol.Opcode.Continuation =>
       MessageType.Continuation
+    case other =>
+      throw new IllegalArgumentException(s"Unknown opcode: $other")
   }
 
   /**
@@ -290,6 +290,22 @@ object WebSocketHandler {
   }
 
   /**
+   * Convert a Pekko HTTP ws.Message to a RawMessage for protocol processing
+   */
+  private def pekkoMessageToRawMessage(message: PekkoMessage): RawMessage = message match {
+    case PekkoTextMessage.Strict(text) =>
+      RawMessage(MessageType.Text, ByteString(text), fin = true)
+    case text: PekkoTextMessage =>
+      // For streamed text messages, we need to collect the text - not supported yet
+      throw new UnsupportedOperationException("Streamed text messages are not yet supported")
+    case PekkoBinaryMessage.Strict(data) =>
+      RawMessage(MessageType.Binary, data, fin = true)
+    case binary: PekkoBinaryMessage =>
+      // For streamed binary messages
+      throw new UnsupportedOperationException("Streamed binary messages are not yet supported")
+  }
+
+  /**
    * Convert a Play Message to a Pekko HTTP Message
    */
   private def playMessageToPekkoMessage(message: Message): PekkoMessage = message match {
@@ -297,10 +313,13 @@ object WebSocketHandler {
       PekkoTextMessage.Strict(data)
     case BinaryMessage(data) =>
       PekkoBinaryMessage.Strict(data)
-    // Ping, Pong, and Close messages are handled by WebSocketFlowHandler.webSocketProtocol
-    // and should not reach this converter in normal operation
-    case other =>
-      throw new IllegalArgumentException(s"Unexpected message type in playMessageToPekkoMessage: ${other.getClass.getSimpleName}")
+    // Ping, Pong, and Close messages are handled by the WebSocketUpgrade.handleMessages API
+    // The user flow should not output these directly
+    case PingMessage(_) | PongMessage(_) | CloseMessage(_, _) =>
+      throw new IllegalArgumentException(
+        s"User WebSocket flows should not output ${message.getClass.getSimpleName}. " +
+        "These are handled by the framework's handleMessages API."
+      )
   }
 
   /**
@@ -318,8 +337,6 @@ object WebSocketHandler {
     case binary: PekkoBinaryMessage =>
       // For streamed binary messages
       throw new UnsupportedOperationException("Streamed binary messages are not yet supported")
-    // Note: Pekko HTTP Message trait may not expose Ping/Pong/Close in the public API
-    // They are handled at the protocol level by handleMessages
   }
 
 
