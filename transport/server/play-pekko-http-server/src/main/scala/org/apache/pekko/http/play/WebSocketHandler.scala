@@ -7,9 +7,6 @@ package org.apache.pekko.http.play
 import scala.concurrent.duration.Duration
 
 import org.apache.pekko.http.impl.engine.ws._
-import org.apache.pekko.http.scaladsl.model.ws.{ BinaryMessage => PekkoBinaryMessage }
-import org.apache.pekko.http.scaladsl.model.ws.{ Message => PekkoMessage }
-import org.apache.pekko.http.scaladsl.model.ws.{ TextMessage => PekkoTextMessage }
 import org.apache.pekko.http.scaladsl.model.ws.UpgradeToWebSocket
 import org.apache.pekko.http.scaladsl.model.ws.WebSocketUpgrade
 import org.apache.pekko.http.scaladsl.model.HttpResponse
@@ -42,19 +39,11 @@ object WebSocketHandler {
       subprotocol: Option[String],
       wsKeepAliveMode: String,
       wsKeepAliveMaxIdle: Duration,
-  ): HttpResponse = {
-    // Convert Pekko HTTP messages to RawMessages, apply Play's WebSocket protocol logic,
-    // then convert back to Pekko HTTP messages
-    val pekkoFlow: Flow[PekkoMessage, PekkoMessage, ?] = Flow[PekkoMessage]
-      .map(pekkoMessageToRawMessage)
-      .via(WebSocketFlowHandler.webSocketProtocol(bufferLimit, wsKeepAliveMode, wsKeepAliveMaxIdle).join(flow))
-      .map(playMessageToPekkoMessage)
-
-    // Use the handleMessages API
-    subprotocol match {
-      case Some(protocol) => upgrade.handleMessages(pekkoFlow, Some(protocol))
-      case None           => upgrade.handleMessages(pekkoFlow)
-    }
+  ): HttpResponse = upgrade match {
+    case lowLevel: UpgradeToWebSocketLowLevel =>
+      lowLevel.handleFrames(messageFlowToFrameFlow(flow, bufferLimit, wsKeepAliveMode, wsKeepAliveMaxIdle), subprotocol)
+    case other =>
+      throw new IllegalArgumentException("WebSocketUpgrade is not an Pekko HTTP UpgradeToWebsocketLowLevel")
   }
 
   /**
@@ -288,58 +277,4 @@ object WebSocketHandler {
   private def close(status: Int, message: String = "") = {
     Left(new CloseMessage(Some(status), message))
   }
-
-  /**
-   * Convert a Pekko HTTP ws.Message to a RawMessage for protocol processing
-   */
-  private def pekkoMessageToRawMessage(message: PekkoMessage): RawMessage = message match {
-    case PekkoTextMessage.Strict(text) =>
-      RawMessage(MessageType.Text, ByteString(text), isFinal = true)
-    case text: PekkoTextMessage =>
-      // For streamed text messages, we need to collect the text - not supported yet
-      throw new UnsupportedOperationException("Streamed text messages are not yet supported")
-    case PekkoBinaryMessage.Strict(data) =>
-      RawMessage(MessageType.Binary, data, isFinal = true)
-    case binary: PekkoBinaryMessage =>
-      // For streamed binary messages
-      throw new UnsupportedOperationException("Streamed binary messages are not yet supported")
-  }
-
-  /**
-   * Convert a Play Message to a Pekko HTTP Message
-   */
-  private def playMessageToPekkoMessage(message: Message): PekkoMessage = message match {
-    case TextMessage(data) =>
-      PekkoTextMessage.Strict(data)
-    case BinaryMessage(data) =>
-      PekkoBinaryMessage.Strict(data)
-    // Ping, Pong, and Close messages are handled by the WebSocketUpgrade.handleMessages API
-    // The user flow should not output these directly
-    case PingMessage(_) | PongMessage(_) | CloseMessage(_, _) =>
-      throw new IllegalArgumentException(
-        s"User WebSocket flows should not output ${message.getClass.getSimpleName}. " +
-          "These are handled by the framework's handleMessages API."
-      )
-  }
-
-  /**
-   * Convert a Pekko HTTP ws.Message to a Play Message
-   *
-   * Note: This function is currently unused but retained for potential future use
-   * when direct message-to-message conversion without protocol handling is needed.
-   */
-  private def pekkoMessageToPlayMessage(message: PekkoMessage): Message = message match {
-    case PekkoTextMessage.Strict(text) =>
-      TextMessage(text)
-    case text: PekkoTextMessage =>
-      // For streamed text messages, we need to collect the text
-      // For now, we don't handle this case properly - throw an exception
-      throw new UnsupportedOperationException("Streamed text messages are not yet supported")
-    case PekkoBinaryMessage.Strict(data) =>
-      BinaryMessage(data)
-    case binary: PekkoBinaryMessage =>
-      // For streamed binary messages
-      throw new UnsupportedOperationException("Streamed binary messages are not yet supported")
-  }
-
 }
