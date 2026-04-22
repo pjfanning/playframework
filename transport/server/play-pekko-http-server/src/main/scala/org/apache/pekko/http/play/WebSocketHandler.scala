@@ -42,7 +42,7 @@ object WebSocketHandler {
     case lowLevel: UpgradeToWebSocketLowLevel =>
       lowLevel.handleFrames(messageFlowToFrameFlow(flow, bufferLimit, wsKeepAliveMode, wsKeepAliveMaxIdle), subprotocol)
     case other =>
-      throw new IllegalArgumentException("WebSocketUpgrade is not an Pekko HTTP UpgradeToWebsocketLowLevel")
+      throw new IllegalArgumentException("WebSocketUpgrade is not an Pekko HTTP UpgradeToWebSocketLowLevel")
   }
 
   /**
