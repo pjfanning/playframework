@@ -493,6 +493,29 @@ object BuildSettings {
       ProblemFilters.exclude[DirectMissingMethodProblem]("views.html.helper.style.format"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("views.html.helper.textarea.format"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("views.html.play20.manual.format"),
+      // Support comments in EventSource
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.libs.EventSource#Event.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.libs.EventSource#Event.this"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("play.api.libs.EventSource#Event.copy$default$1"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("play.api.libs.EventSource#Event.data"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("play.api.libs.EventSource#Event._1"),
+      // Scala 3.8.2
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.Mode.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.i18n.Lang.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.mvc.ActionBuilder.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.mvc.BodyParser.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.mvc.ControllerHelpers.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.mvc.PathBindable.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.api.mvc.Session.<clinit>"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("play.core.server.ServerProvider.<clinit>"),
+      // Pekko 2
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "org.apache.pekko.stream.testkit.NoMaterializer.schedulePeriodically"
+      ),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("org.apache.pekko.http.play.WebSocketHandler.handleWebSocket"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem](
+        "org.apache.pekko.http.play.WebSocketHandler.handleWebSocket"
+      ),
     ),
     (Compile / unmanagedSourceDirectories) += {
       val suffix = CrossVersion.partialVersion(scalaVersion.value) match {

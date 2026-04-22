@@ -24,7 +24,8 @@ import org.apache.pekko.http.play.WebSocketHandler
 import org.apache.pekko.http.scaladsl.model._
 import org.apache.pekko.http.scaladsl.model.headers
 import org.apache.pekko.http.scaladsl.model.headers.Expect
-import org.apache.pekko.http.scaladsl.model.ws.UpgradeToWebSocket
+import org.apache.pekko.http.scaladsl.model.ws.WebSocketUpgrade
+import org.apache.pekko.http.scaladsl.model.AttributeKeys
 import org.apache.pekko.http.scaladsl.settings.ParserSettings
 import org.apache.pekko.http.scaladsl.settings.ServerSettings
 import org.apache.pekko.http.scaladsl.util.FastFuture._
@@ -129,16 +130,18 @@ class PekkoHttpServer(context: PekkoHttpServer.Context) extends Server {
    * configuration, with an additional setting patched in to enable or disable HTTP/2.
    */
   protected def createPekkoHttpConfig(): Config =
-    Configuration("pekko.http.server.preview.enable-http2" -> http2Enabled)
-      .withFallback(Configuration(context.actorSystem.settings.config))
-      .underlying
+    Configuration(
+      "pekko.http.server.enable-http2"         -> http2Enabled,
+      "pekko.http.server.preview.enable-http2" -> http2Enabled,
+    ).withFallback(Configuration(context.actorSystem.settings.config)).underlying
 
   /** Play's parser settings for Pekko HTTP. Initialized by a call to [[createParserSettings()]]. */
   protected val parserSettings: ParserSettings = createParserSettings()
 
   /** Called by Play when creating its Pekko HTTP parser settings. Result stored in [[parserSettings]]. */
   protected def createParserSettings(): ParserSettings =
-    ParserSettings(pekkoHttpConfig)
+    ParserSettings
+      .forServer(context.actorSystem)
       .withMaxContentLength(maxContentLength)
       .withMaxHeaderValueLength(maxHeaderValueLength)
       .withIncludeTlsSessionInfoHeader(includeTlsSessionInfoHeader)
@@ -218,27 +221,18 @@ class PekkoHttpServer(context: PekkoHttpServer.Context) extends Server {
       secure: Boolean
   ): Http.ServerBinding = {
     // TODO: pass in Inet.SocketOption and LoggerAdapter params?
-    val bindingFuture: Future[Http.ServerBinding] =
-      try {
-        var serverBuilder = Http()(using context.actorSystem)
-          .newServerAt(context.config.address, port)
-          .withSettings(createServerSettings(port, connectionContext, secure))
-        connectionContext match {
-          case httpsContext: HttpsConnectionContext =>
-            serverBuilder = serverBuilder.enableHttps(httpsContext)
-          case _ =>
-        }
-
-        serverBuilder.bind(handleRequest(_, connectionContext.isSecure))
-      } catch {
-        // Http2SupportNotPresentException is private[pekko] so we need to match the name
-        case e: Throwable if e.getClass.getSimpleName == "Http2SupportNotPresentException" =>
-          throw new RuntimeException(
-            "HTTP/2 enabled but pekko-http2-support not found. " +
-              "Add .enablePlugins(PlayPekkoHttp2Support) in build.sbt",
-            e
-          )
+    val bindingFuture: Future[Http.ServerBinding] = {
+      var serverBuilder = Http()(using context.actorSystem)
+        .newServerAt(context.config.address, port)
+        .withSettings(createServerSettings(port, connectionContext, secure))
+      connectionContext match {
+        case httpsContext: HttpsConnectionContext =>
+          serverBuilder = serverBuilder.enableHttps(httpsContext)
+        case _ =>
       }
+
+      serverBuilder.bind(handleRequest(_, connectionContext.isSecure))
+    }
 
     Await.result(bindingFuture, bindTimeout)
   }
@@ -392,7 +386,7 @@ class PekkoHttpServer(context: PekkoHttpServer.Context) extends Server {
       taggedRequestHeader: RequestHeader,
       handler: Handler
   ): Future[HttpResponse] = {
-    val upgradeToWebSocket = request.header[UpgradeToWebSocket]
+    val upgradeToWebSocket = request.attribute(AttributeKeys.webSocketUpgrade)
 
     // default execution context used for executing the action
     implicit val defaultExecutionContext: ExecutionContext = tryApp match {

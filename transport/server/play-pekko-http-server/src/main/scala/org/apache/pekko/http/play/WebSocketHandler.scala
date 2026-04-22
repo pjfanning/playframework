@@ -7,7 +7,7 @@ package org.apache.pekko.http.play
 import scala.concurrent.duration.Duration
 
 import org.apache.pekko.http.impl.engine.ws._
-import org.apache.pekko.http.scaladsl.model.ws.UpgradeToWebSocket
+import org.apache.pekko.http.scaladsl.model.ws.WebSocketUpgrade
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.stream.scaladsl._
 import org.apache.pekko.stream.stage._
@@ -25,31 +25,14 @@ import play.core.server.common.WebSocketFlowHandler.RawMessage
 object WebSocketHandler {
 
   /**
-   * Handle a WebSocket without selecting a subprotocol
+   * Handle a WebSocket using the new WebSocketUpgrade API
    *
-   * This may cause problems with clients that propose subprotocols in the
-   * upgrade request and expect the server to pick one, such as Chrome.
+   * This method uses the maintained pekko-http WebSocketUpgrade API instead of the removed UpgradeToWebSocket.
    *
-   * See https://github.com/playframework/playframework/issues/7895
-   */
-  @deprecated("Please specify the subprotocol (or be explicit that you specif None)", "2.7.0")
-  def handleWebSocket(upgrade: UpgradeToWebSocket, flow: Flow[Message, Message, ?], bufferLimit: Int): HttpResponse =
-    handleWebSocket(upgrade, flow, bufferLimit, None)
-
-  @deprecated("Please specify the keep-alive mode (ping or pong) and max-idle time", "2.8.19")
-  def handleWebSocket(
-      upgrade: UpgradeToWebSocket,
-      flow: Flow[Message, Message, ?],
-      bufferLimit: Int,
-      subprotocol: Option[String]
-  ): HttpResponse =
-    handleWebSocket(upgrade, flow, bufferLimit, subprotocol, "ping", Duration.Inf)
-
-  /**
-   * Handle a WebSocket
+   * @since 3.1.0
    */
   def handleWebSocket(
-      upgrade: UpgradeToWebSocket,
+      upgrade: WebSocketUpgrade,
       flow: Flow[Message, Message, ?],
       bufferLimit: Int,
       subprotocol: Option[String],
@@ -59,7 +42,7 @@ object WebSocketHandler {
     case lowLevel: UpgradeToWebSocketLowLevel =>
       lowLevel.handleFrames(messageFlowToFrameFlow(flow, bufferLimit, wsKeepAliveMode, wsKeepAliveMaxIdle), subprotocol)
     case other =>
-      throw new IllegalArgumentException("UpgradeToWebsocket is not an Pekko HTTP UpgradeToWebsocketLowLevel")
+      throw new IllegalArgumentException("WebSocketUpgrade is not an Pekko HTTP UpgradeToWebsocketLowLevel")
   }
 
   /**

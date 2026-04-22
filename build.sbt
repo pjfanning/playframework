@@ -33,6 +33,8 @@ ThisBuild / dynver := {
     .mkVersion(out => versionFmt(out, dynverSonatypeSnapshots.value), fallbackVersion(d))
 }
 
+ThisBuild / evictionErrorLevel := Level.Info
+
 lazy val PlayBuildLinkProject = PlayNonCrossBuiltProject("Play-Build-Link", "dev-mode/play-build-link")
   .settings(
     compile / javacOptions ++= Seq("--release", "11"),
