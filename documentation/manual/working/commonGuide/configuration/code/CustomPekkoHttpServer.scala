@@ -6,11 +6,8 @@
 // ###replace: package server
 package detailedtopics.configuration.custompekkoserver
 
-import java.util.Random
-
 import org.apache.pekko.http.scaladsl.model.HttpMethod
 import org.apache.pekko.http.scaladsl.settings.ParserSettings
-import org.apache.pekko.http.scaladsl.settings.ServerSettings
 import org.apache.pekko.http.scaladsl.ConnectionContext
 import play.core.server.PekkoHttpServer
 import play.core.server.PekkoHttpServerProvider
@@ -22,15 +19,6 @@ class CustomPekkoHttpServer(context: PekkoHttpServer.Context) extends PekkoHttpS
     val defaultSettings: ParserSettings =
       super.createParserSettings()
     defaultSettings.withCustomMethods(HttpMethod.custom("TICKLE"))
-  }
-  protected override def createServerSettings(
-      port: Int,
-      connectionContext: ConnectionContext,
-      secure: Boolean
-  ): ServerSettings = {
-    val defaultSettings: ServerSettings =
-      super.createServerSettings(port, connectionContext, secure)
-    defaultSettings.withWebsocketRandomFactory(() => new Random())
   }
 }
 
