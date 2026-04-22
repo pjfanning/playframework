@@ -11,9 +11,9 @@ object Dependencies {
   val pekkoVersion: String = sys.props.getOrElse("pekko.version", "2.0.0-M1")
   val pekkoHttpVersion     = sys.props.getOrElse("pekko.http.version", "2.0.0-M1")
 
-  val playJsonVersion = "3.1.0-M9"
+  val playJsonVersion = "3.1.0-M10"
 
-  val logback = "ch.qos.logback" % "logback-classic" % "1.5.22"
+  val logback = "ch.qos.logback" % "logback-classic" % "1.5.32"
 
   val specs2Version = "4.23.0"
   val specs2Deps    = Seq(
@@ -29,7 +29,7 @@ object Dependencies {
     "org.scalacheck" %% "scalacheck"        % "1.19.0"      % Test
   )
 
-  val jacksonVersion  = "2.20.1"
+  val jacksonVersion  = "2.21.2"
   val jacksonDatabind = Seq("com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion)
   val jacksons        = Seq(
     "com.fasterxml.jackson.core"     % "jackson-core",
@@ -52,7 +52,7 @@ object Dependencies {
   val slf4jSimple  = "org.slf4j" % "slf4j-simple" % slf4jVersion
 
   val guava      = "com.google.guava" % "guava"        % "33.5.0-jre"
-  val mockitoAll = "org.mockito"      % "mockito-core" % "5.21.0"
+  val mockitoAll = "org.mockito"      % "mockito-core" % "5.23.0"
 
   val jakartaInject = "jakarta.inject" % "jakarta.inject-api" % "2.0.1"
 
@@ -64,7 +64,7 @@ object Dependencies {
     "org.apache.derby" % "derbytools"
   ).map(_ % derbyVersion)
 
-  val acolyteVersion = "1.2.10"
+  val acolyteVersion = "1.2.11"
   val acolyte        = "org.eu.acolyte" % "jdbc-driver" % acolyteVersion
 
   val jjwtVersion = "0.13.0"
@@ -86,8 +86,8 @@ object Dependencies {
 
   val jpaDeps = Seq(
     "jakarta.persistence" % "jakarta.persistence-api" % "3.2.0",
-    "org.hibernate.orm"   % "hibernate-core"          % "7.2.0.Final" % "test",
-    "org.hibernate.orm"   % "hibernate-scan-jandex"   % "7.2.0.Final" % "test"
+    "org.hibernate.orm"   % "hibernate-core"          % "7.3.1.Final" % "test",
+    "org.hibernate.orm"   % "hibernate-scan-jandex"   % "7.3.1.Final" % "test"
   )
 
   def scalaReflect(scalaVersion: String) = CrossVersion.partialVersion(scalaVersion) match {
@@ -102,7 +102,7 @@ object Dependencies {
       }
     })
 
-  val springFrameworkVersion = "7.0.2"
+  val springFrameworkVersion = "7.0.6"
 
   val javaDeps = Seq(
     // Used by the Java routing DSL
@@ -110,7 +110,7 @@ object Dependencies {
   ) ++ specs2Deps.map(_ % Test)
 
   val joda = Seq(
-    "joda-time" % "joda-time"    % "2.14.0",
+    "joda-time" % "joda-time"    % "2.14.1",
     "org.joda"  % "joda-convert" % "3.0.1"
   )
 
@@ -131,7 +131,7 @@ object Dependencies {
   val junitInterface = "com.github.sbt" % "junit-interface" % "0.13.3"
   val junit          = "junit"          % "junit"           % "4.13.2"
 
-  val assertj = "org.assertj" % "assertj-core" % "3.27.6"
+  val assertj = "org.assertj" % "assertj-core" % "3.27.7"
 
   val javaTestDeps = Seq(
     junit,
@@ -163,7 +163,7 @@ object Dependencies {
       ) ++ scalaParserCombinators(scalaVersion) ++ specs2Deps.map(_ % Test) ++ javaTestDeps ++
       scalaReflect(scalaVersion)
 
-  val nettyVersion = "4.2.9.Final"
+  val nettyVersion = "4.2.12.Final"
 
   val netty = Seq(
     "org.playframework.netty" % "netty-reactive-streams-http" % "3.1.0-M1",
@@ -208,7 +208,7 @@ object Dependencies {
 
   val runSupportDeps: Seq[ModuleID] = Seq(playFileWatch) ++ javaTestDeps
 
-  val typesafeConfig = "com.typesafe" % "config" % "1.4.5"
+  val typesafeConfig = "com.typesafe" % "config" % "1.4.6"
 
   def sbtDependencies(sbtVersion: String, scalaVersion: String) = {
     def sbtDep(moduleId: ModuleID) = sbtPluginDep(moduleId, sbtVersion, scalaVersion)
@@ -219,8 +219,8 @@ object Dependencies {
       playFileWatch,
       sbtDep("org.playframework.twirl" % "sbt-twirl"           % BuildInfo.sbtTwirlVersion),
       sbtDep("com.github.sbt"          % "sbt-native-packager" % BuildInfo.sbtNativePackagerVersion),
-      sbtDep("com.github.sbt"          % "sbt-web"             % "1.6.0-M1"),
-      sbtDep("com.github.sbt"          % "sbt-js-engine"       % "1.4.0-M1"),
+      sbtDep("com.github.sbt"          % "sbt-web"             % "1.6.0-M4"),
+      sbtDep("com.github.sbt"          % "sbt-js-engine"       % "1.4.0-M4"),
       logback % Test
     ) ++ specs2Deps.map(_ % Test) ++ scalaReflect(scalaVersion)
   }
@@ -230,7 +230,7 @@ object Dependencies {
     "org.webjars" % "prettify" % "4-Mar-2013-1" % "webjars"
   )
 
-  val playDocVersion       = "3.0.1"
+  val playDocVersion       = "3.1.0-M1"
   val playDocsDependencies = Seq(
     "org.playframework" %% "play-doc" % playDocVersion
   ) ++ playdocWebjarDependencies
@@ -298,7 +298,7 @@ object Dependencies {
     "com.github.ben-manes.caffeine" % "jcache"   % caffeineVersion
   ) ++ jcacheApi ++ Seq(assertj % Test)
 
-  val playWsStandaloneVersion = "3.1.0-M11"
+  val playWsStandaloneVersion = "3.1.0-M12"
   val playWsDeps              = Seq(
     "org.playframework" %% "play-ws-standalone"      % playWsStandaloneVersion,
     "org.playframework" %% "play-ws-standalone-xml"  % playWsStandaloneVersion,

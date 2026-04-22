@@ -8,6 +8,9 @@ import sbtheader.FileType
 import sbtheader.HeaderPlugin.autoImport.HeaderPattern.commentBetween
 import sbtheader.LineCommentCreator
 
+// Makes sbt-java-formatter keep using google-java-format 1.28.0 to not require Java 21 for formatting (yet)
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
+
 val DocsApplication = config("docs").hide
 
 lazy val main = Project("Play-Documentation", file("."))
@@ -36,8 +39,8 @@ lazy val main = Project("Play-Documentation", file("."))
     libraryDependencies ++= Seq(
       "com.typesafe"   % "config"       % "1.4.4"   % Test,
       "com.h2database" % "h2"           % "2.4.240" % Test,
-      "org.mockito"    % "mockito-core" % "5.21.0"  % Test,
-      "org.assertj"    % "assertj-core" % "3.27.6"  % Test,
+      "org.mockito"    % "mockito-core" % "5.23.0"  % Test,
+      "org.assertj"    % "assertj-core" % "3.27.7"  % Test,
       // https://github.com/logstash/logstash-logback-encoder/tree/logstash-logback-encoder-4.9#including
       ("net.logstash.logback" % "logstash-logback-encoder" % "9.0" % Test)
         .excludeAll(ExclusionRule("com.fasterxml.jackson.core")), // Avoid conflicts with Play's Jackson dependency
@@ -75,7 +78,7 @@ lazy val main = Project("Play-Documentation", file("."))
     Test / unmanagedResourceDirectories ++= (baseDirectory.value / "manual" / "detailedTopics" ** "code").get,
     // Don't include sbt files in the resources
     Test / unmanagedResources / excludeFilter := (Test / unmanagedResources / excludeFilter).value || "*.sbt",
-    crossScalaVersions                        := Seq("2.13.18", "3.3.6"),
+    crossScalaVersions                        := Seq("2.13.18", "3.8.3"),
     scalaVersion                              := "2.13.18",
     Test / fork                               := true,
     Test / javaOptions ++= Seq("-Xmx512m", "-Xms128m"),
@@ -102,6 +105,7 @@ lazy val main = Project("Play-Documentation", file("."))
         --- (baseDirectory.value ** "target" ** "*")).get ++
         (baseDirectory.value / "project" ** "*.scala" --- (baseDirectory.value ** "target" ** "*")).get,
     Test / headerSources ++= (baseDirectory.value ** "*.md").get,
+    javafmtSortImports := false,
     Test / javafmt / sourceDirectories ++= (Test / unmanagedSourceDirectories).value,
     Test / javafmt / sourceDirectories ++= (Test / unmanagedResourceDirectories).value,
     // No need to show eviction warnings for Play documentation.

@@ -33,12 +33,12 @@ ThisBuild / dynver := {
     .mkVersion(out => versionFmt(out, dynverSonatypeSnapshots.value), fallbackVersion(d))
 }
 
+// Makes sbt-java-formatter keep using google-java-format 1.28.0 to not require Java 21 for formatting (yet)
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
+
 ThisBuild / evictionErrorLevel := Level.Info
 
 lazy val PlayBuildLinkProject = PlayNonCrossBuiltProject("Play-Build-Link", "dev-mode/play-build-link")
-  .settings(
-    compile / javacOptions ++= Seq("--release", "11"),
-  )
   .dependsOn(PlayExceptionsProject)
 
 // play-run-support project is only compiled against sbt scala version
@@ -46,7 +46,6 @@ lazy val PlayRunSupportProject = PlayNonCrossBuiltProject("Play-Run-Support", "d
   .settings(
     target := target.value / "play-run-support",
     libraryDependencies ++= runSupportDeps,
-    compile / javacOptions ++= Seq("--release", "11"),
     mimaPreviousArtifacts := Set.empty, // TODO: Remove later
     // Or:
     // MimaKeys.mimaPreviousArtifacts := Set("org.playframework" % "play-run-support_2.12" % "3.0.0"),
@@ -58,7 +57,6 @@ lazy val PlayRunSupportProject = PlayNonCrossBuiltProject("Play-Run-Support", "d
 lazy val PlayRoutesCompilerProject = PlayDevelopmentProject("Play-Routes-Compiler", "dev-mode/play-routes-compiler")
   .enablePlugins(SbtTwirl)
   .settings(
-    scalacOptions ++= Seq("-release", "11"),
     libraryDependencies ++= routesCompilerDependencies(scalaVersion.value),
     TwirlKeys.templateFormats := Map("twirl" -> "play.routes.compiler.ScalaFormat")
   )
@@ -75,9 +73,6 @@ lazy val PlayStreamsProject = PlayCrossBuiltProject("Play-Streams", "core/play-s
   .settings(libraryDependencies ++= streamsDependencies)
 
 lazy val PlayExceptionsProject = PlayNonCrossBuiltProject("Play-Exceptions", "core/play-exceptions")
-  .settings(
-    compile / javacOptions ++= Seq("--release", "11"),
-  )
 
 lazy val PlayBillOfMaterials = PlayCrossBuiltProject("Play-Bom", "dev-mode/play-bill-of-materials")
   .enablePlugins(BillOfMaterialsPlugin)
@@ -520,9 +515,9 @@ lazy val PlayFramework = Project("Play-Framework", file("."))
         --- (baseDirectory.value ** "target" ** "*")
         --- (baseDirectory.value ** "gradle-plugin" ** "*") // Gradle Spotless plugin is used
         --- (baseDirectory.value / "version.properties")
-        --- (baseDirectory.value / "documentation" ** "*")).get ++
-        (baseDirectory.value / "web" / "play-openid" ** "*.html" --- (baseDirectory.value ** "target" ** "*")).get ++
-        (baseDirectory.value / "project" ** "*.scala" --- (baseDirectory.value ** "target" ** "*")).get
+        --- (baseDirectory.value / "documentation" ** "*")).get() ++
+        (baseDirectory.value / "web" / "play-openid" ** "*.html" --- (baseDirectory.value ** "target" ** "*")).get() ++
+        (baseDirectory.value / "project" ** "*.scala" --- (baseDirectory.value ** "target" ** "*")).get()
   )
   .aggregate((userProjects ++ nonUserProjects): _*)
 

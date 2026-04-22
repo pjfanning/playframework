@@ -339,7 +339,7 @@ object PlayDocsValidation {
       report.files.size
     )
 
-    IO.write(file, html.translationReport(result, version).body)
+    IO.write(file, org.playframework.docs.sbtplugin.html.translationReport(result, version).body)
     file
   }
 
@@ -348,7 +348,7 @@ object PlayDocsValidation {
     val stateValue = state.value
     if (!file.exists) {
       println("Generating report...")
-      Project
+      sbt.internal.PlayDocsCompat
         .runTask(translationCodeSamplesReport, stateValue)
         .get
         ._2
@@ -574,7 +574,7 @@ object PlayDocsValidation {
 
   private def getMarkdownFiles(base: File): Seq[(File, String)] = {
     import Path._
-    (base / "manual" ** "*.md").get.pair(relativeTo(base))
+    (base / "manual" ** "*.md").get().pair(relativeTo(base))
   }
 
   private def logErrorAtLocation(log: Logger, file: File, position: Int, errorMessage: String) = synchronized {
