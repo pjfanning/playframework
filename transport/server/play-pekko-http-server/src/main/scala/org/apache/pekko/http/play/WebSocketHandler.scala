@@ -211,6 +211,8 @@ object WebSocketHandler {
       MessageType.Pong
     case Protocol.Opcode.Continuation =>
       MessageType.Continuation
+    case other =>
+      throw new IllegalArgumentException(s"Unknown opcode: $other")
   }
 
   /**

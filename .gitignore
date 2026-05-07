@@ -9,6 +9,7 @@ generated.keystore
 generated.truststore
 *.log
 .sdkmanrc
+sbt/
 
 # Build Server Protocol
 .bsp/
